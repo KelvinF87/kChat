@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Chat App</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      margin: 0;
+      background-color: #f4f4f9;
+    }
+
+    #chat-container {
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+      overflow: hidden;
+    }
+
+    #messages {
+      flex: 1;
+      overflow-y: auto;
+      padding: 20px;
+      list-style-type: none;
+      margin: 0;
+    }
+
+    #messages li {
+      padding: 12px;
+      margin-bottom: 10px;
+      background: #ffffff;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      max-width: 70%;
+      word-wrap: break-word;
+    }
+
+    #messages li:nth-child(odd) {
+      align-self: flex-start;
+    }
+
+    #messages li:nth-child(even) {
+      align-self: flex-end;
+      background: #dcf8c6;
+    }
+
+    #form {
+      display: flex;
+      padding: 10px;
+      background: #ffffff;
+      border-top: 1px solid #e0e0e0;
+    }
+
+    #input {
+      flex: 1;
+      padding: 12px;
+      border: 1px solid #ccc;
+      border-radius: 20px;
+      margin-right: 10px;
+    }
+
+    #form button {
+      padding: 10px 20px;
+      border: none;
+      border-radius: 20px;
+      background: #007bff;
+      color: white;
+      cursor: pointer;
+    }
+
+    #form button:hover {
+      background: #0056b3;
+    }
+
+    #voice-input-button {
+      background: #28a745;
+      margin-left: 10px;
+    }
+
+    #voice-input-button:hover {
+      background: #218838;
+    }
+  </style>
+</head>
+<body>
+  <div id="chat-container">
+    <ul id="messages"></ul>
+    <form id="form" action="">
+      <input id="input" autocomplete="off" placeholder="Type a message..." />
+      <button type="submit">Send</button>
+      <button type="button" id="voice-input-button">🎤</button>
+    </form>
+  </div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script>
+    const socket = io();
+    const synth = window.speechSynthesis;
+    const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+    recognition.lang = 'es-ES'; // Establecer el idioma a español
+    recognition.interimResults = false;
+    recognition.maxAlternatives = 1;
+
+    const form = document.getElementById('form');
+    const input = document.getElementById('input');
+    const messages = document.getElementById('messages');
+
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+      if (input.value) {
+        socket.emit('chat message', input.value);
+        input.value = '';
+      }
+    });
+
+    socket.on('chat message', (msg) => {
+      const li = document.createElement('li');
+      li.textContent = msg;
+      messages.appendChild(li);
+      messages.scrollTop = messages.scrollHeight;
+
+      // Leer el mensaje en voz alta
+      speakMessage(msg);
+    });
+
+    function speakMessage(message) {
+      const utterance = new SpeechSynthesisUtterance(message);
+      synth.speak(utterance);
+    }
+
+    recognition.onresult = (event) => {
+      const transcript = event.results[0][0].transcript;
+      input.value = transcript;
+      form.submit();
+    };
+
+    recognition.onerror = (event) => {
+      console.error('Speech recognition error detected: ' + event.error);
+    };
+
+    recognition.onend = () => {
+      console.log('Speech recognition service disconnected');
+    };
+
+    document.getElementById('voice-input-button').addEventListener('click', () => {
+      recognition.start();
+    });
+  </script>
+</body>
+</html>
