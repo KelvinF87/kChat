@@ -1,2 +1,2 @@
-node-modules // ignore node_module folder
-node-modules/ // ignore node_module folder
+node_modules 
+node_modules/
